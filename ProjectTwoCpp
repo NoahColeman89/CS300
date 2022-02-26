@@ -1,0 +1,271 @@
+//============================================================================
+// Name        : ABCU Course List Program
+// Author      : Noah Coleman
+// Version     : 1.0
+// Copyright   : Copyright © 2017 SNHU COCE
+// Description : Vector Sorting Algorithms
+//============================================================================
+
+
+#include <algorithm>
+#include <iostream>
+#include <fstream> 
+#include <stdexcept>
+#include <string>
+#include <vector>
+#include <list>
+#include <sstream>
+#include <iomanip>
+
+//#include "CSVparser.hpp"
+
+using namespace std; // Don't need but file crashes witout
+
+//============================================================================
+// Global definitions visible to all methods and classes
+//============================================================================
+
+
+string userChoice;
+bool found = false;
+string userFile;
+
+
+// define a structure to hold bid information
+struct Course {
+    string courseId; // unique identifier
+    string name;
+    string prereq;
+    string prereq2;
+    
+};
+
+//============================================================================
+// Static methods used for testing
+//============================================================================
+
+/**
+ * Display the bid information to the console (std::out)
+ *
+ * @param bid struct containing the bid info
+ */
+
+//Method to display basic course list
+void displayCourseList(Course course){
+        cout << course.courseId << ": " << course.name;
+        cout << endl;
+    }
+
+//Method to dispaly individulal course
+void displayCourse(Course course) {
+    cout << course.courseId << ": " << course.name;  //Output ID and name
+    if (!course.prereq.empty()) {                    //If prerequisites exist, output them
+        cout << endl << "Prerequisites: " << course.prereq;
+        if (!course.prereq2.empty()) {
+            cout << ", " << course.prereq2;
+            }
+
+    }
+    cout << endl;
+    return;
+}
+
+
+//Method to load courses from csv file
+vector<Course> loadCourses(string csvPath) {
+    string fname;
+    fname = csvPath;
+
+    //Create vector to load file elements then pass to course vector
+    vector<Course> courses;
+    vector<vector<string>> temp;
+    vector<string> row;
+    string line, word;
+
+
+    fstream file(fname, ios::in);
+    if (file.is_open()) //Check if file is open
+    {
+        cout << "Loading file " << userFile << endl;
+        while (getline(file, line))  //Iterate throguh file
+        {
+            row.clear();
+
+            stringstream str(line);
+
+            while (getline(str, word, ','))  //Load comma seperated elements
+                row.push_back(word);
+                temp.push_back(row);
+        }
+    }
+    else
+        cout << "Could not open the file\n";
+
+    //Load elements into course vector
+    int i = 1;
+    Course course;
+    while (i < temp.size()) {      
+        course.courseId = temp[i][0];
+        course.name = temp[i][1];
+        //If prerequiste exists, add to course
+        if (!temp[i][2].empty()) {
+            course.prereq = temp[i][2];
+            // FIXME Could not get to work, very confused, out of range error
+            /*if (!temp[i][3].empty()) {
+                course.prereq2 = temp[i][3];
+            }*/
+        }
+        //Add course values
+        courses.push_back(course);
+        i++;       
+    }
+
+    return courses;
+}
+
+
+
+/**
+ * Partition the vector of coursesinto two parts, low and high
+ *
+ * @param bids Address of the vector<Course> instance to be partitioned
+ * @param begin Beginning index to partition
+ * @param end Ending index to partition
+ */
+int partition(vector<Course>& courses, int begin, int end) {
+    int lowIndex = begin; //Set low index to the first element
+    int highIndex = end;  //Set high index to the last element
+    int midPoint = lowIndex + (highIndex - lowIndex) / 2;  //Find the midpoint
+    string pivot = courses.at(midPoint).courseId; //Set middle element as pivot
+    bool done = false;
+
+
+    while (!done) {
+        // Increment lowIndex while numbers[lowIndex] < pivot
+        while (courses.at(lowIndex).courseId < pivot) {
+            lowIndex += 1;
+        }
+        // Decrement highIndex while pivot < numbers[highIndex]
+        while (pivot < courses.at(highIndex).courseId) {
+            highIndex -= 1;
+        }
+        // If zero or one elements remain, then all numbers are 
+        // partitioned. Return highIndex.
+        if (lowIndex >= highIndex) {
+            done = true;
+        }
+        else {
+            // Swap numbers[lowIndex] and numbers[highIndex]
+            string temp = courses.at(lowIndex).courseId;
+            courses.at(lowIndex).courseId = courses.at(highIndex).courseId;
+            courses.at(highIndex).courseId = temp;
+
+            // Update lowIndex and highIndex
+            lowIndex += 1;
+            highIndex -= 1;
+        }
+    }
+
+    return highIndex;
+}
+
+void quickSort(vector<Course>& courses, int begin, int end) {
+    int mid = 0;
+    int lowIndex = begin;
+    int highIndex = end;
+    /* Base case: If there are 1 or zero courses to sort,
+     partition is already sorted otherwise if begin is greater
+     than or equal to end then return*/
+    if (begin >= end) {
+        return;
+    }
+    int lowEndIndex = partition(courses, lowIndex, highIndex);
+
+    // Recursively sort low partition (lowIndex to lowEndIndex) 
+    // and high partition (lowEndIndex + 1 to highIndex)
+    quickSort(courses, lowIndex, lowEndIndex);
+    quickSort(courses, lowEndIndex + 1, highIndex);
+
+}
+
+/**
+ * The one and only main() method
+ */
+int main(int argc, char* argv[]) {
+
+    // Define a vector to hold all the courses
+    vector<Course> courses;
+
+
+    string choice;  //Variable for menu choice
+
+    //While loop for menu
+    while (choice[0] != '4') {
+        cout << "Menu:" << endl;
+        cout << "  1. Load Data Structure." << endl;
+        cout << "  2. Print Course List." << endl;
+        cout << "  3. Print Course." << endl;
+        cout << "  4. Exit" << endl;
+        cout << "What would you like to do?: " << endl;
+        cin >> choice;
+
+        if (choice[1]) {       // Validate input, only accept a single character
+            cout << "Please enter a single character.";
+            cout << endl;
+        }
+        else{
+            switch (choice[0]) {
+            //Case 1 asks user to input a file name and call load file vector
+            case '1':
+                cout << "Please enter a file name." << endl;
+                cin >> userFile;
+                courses = loadCourses(userFile);
+                break;
+
+            //Case 2 sorts and outputs courses in alphanumeric order
+            case '2':
+                // Perform quick sort
+                quickSort(courses, 0, courses.size() - 1);
+
+                for (int i = 0; i < courses.size(); ++i) {
+                    displayCourseList(courses[i]);
+                }
+                cout << endl;
+                break;
+
+            //Case 3 takes input and outputs data on a single course
+            case '3':
+                cout << "What course do you want to know about ?" << endl;
+                cin >> userChoice;
+
+                //Convert input to upper case for ease of search
+                std::for_each(userChoice.begin(), userChoice.end(), [](char& c) {
+                    c = ::toupper(c);
+                    });
+
+                //Search and output course
+                for (int i = 0; i < courses.size(); ++i) {
+                    if (userChoice == courses.at(i).courseId) {
+                        displayCourse(courses[i]);
+                        found = true;
+                    }
+                }
+                //Error if course not found
+                if (!found) {
+                    cout << "Course not found.";
+                }
+                cout << endl << endl;
+                break;
+
+            default:
+                break;
+            }
+
+        }
+    }
+
+    cout << "Good bye." << endl << endl;
+
+    return 0;
+}
+
